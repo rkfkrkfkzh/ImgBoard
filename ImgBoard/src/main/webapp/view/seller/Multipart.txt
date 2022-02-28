@@ -1,0 +1,76 @@
+Multipart
+
+ WAS : Web Application Server
+▶ POST 방식의 getParameter()
+POST 방식에서 request.getParameter()메서드를 WAS에서 알아서 처리할 수 있도록 되어있는 이유는 form에서 method가 
+POST방식일 때는 디폴트값으로 enctype="application/x-www-form-urlencoded" 옵션이 설정 되어있기 때문에 이를 WAS에서 
+인식하고 알아서 in/output방식으로 데이터를 처리하기 때문이다.
+
+따라서, POST방식에서는 enctype이 "application/x-www-form-urlencoded"방식이 아닌 경우, getParameter()로 데이터를 불러올 수 없다.
+request.getHeader(“Content-Type”) 또는 request.getContentType() 를 통해서 enctype을 확인할 수 있다. 또한 이 값은 get방식의 경우
+는 null을 반환하게 된다. ( get방식에는 enctype이 없다. )
+
+
+▶ 파일전송
+form에서 파일 또는 이미지를 전송하기 위해서는 enctype이 “multipart/form-data”로 설정되어 있어야 한다. 따라서, request.getParameter()로 데이터를 불러올 수 없게 된다.
+
+또한 enctype은 post방식에서만 존재하기 때문에 GET방식에서는 파일전송이 불가능하다.
+request.getContentType();
+enctype을 확인할 수 있다.
+request.getContentLength();
+전송받은 모든 데이터의 길이를 byte크기(int형)로 반환한다
+.
+파일전송의 경우 getParameter()를 사용할 수 없기 때문에, request.getReader().readLine(); 등의 in/out풋 방식을 통해서 불러와야 한다.
+또한, form에서 파일등 여러 가지 데이터를 가져올 때, getParameter()로 하나씩 뽑아오지 않기 때문에 데이터의 구분이 어렵다. 따라서 multipart요청을 처리 할 때는 보통 라이브러리로 처리한다.
+
+MultipartRequest 객체를 생성
+객체 생성 시 생성과 동시에 form을 통해 받아온 파일이 바로 세이브 디렉토리로 복사된다.(업로드)
+
+MultipartRequest객체의 생성자의 매개인자로는 2개짜리부터 5개짜리까지 있다.
+1번째 인자로는 무조건 request객체를 받는다.
+2번째 인자는 세이브디렉토리의 경로.
+3번째 인자는 제한용량설정(int 형 (1024*1024*100 =>100mb )
+4번째 인자는 문자인코딩 방식
+5번째 인자는 리네임정책
+MultipartRequest객체의 기본 문자인코딩 방식으로는 한글파일명이 처리가 불가능하기 때문에 4번째 인코딩 방식을 “utf-8”로 설정해준다.
+=> 5번째 인자인 리네임정책은 중복파일명을 어떻게 처리할 것인지에 대해 설정하는 것
+
+업로드경로
+파일의 업로드 경로를 지정해 줄 때 웹 경로가 아닌 실제 경로를 적어 주어야 한다.
+실제 경로를 적는것이 번거롭기 때문에 request.getRealPath(“웹경로”)메서드를 이용하면 해당 웹 경로에 대한 실제 서버경로를 반환해 준다.
+
+파일이 아닌 데이터 처리 메서드
+enctype이 multipart일 때 request.getParameter()로 데이터를 뽑아낼 수 없지만,
+MultipartRequest객체를 이용하면 똑같이 getParameter()메서드로 일반 데이터를 뽑아낼 수 있다.
+따라서, mr.getParameter(“네임”) 을 하게 되면 똑같이 데이터를 뽑아낼 수 있다.
+
+파일 관련 메서드
+mr.getContentType(“name”);
+보낸 파일의 형태가 무엇인지를 반환 ( request.getcontentType과 다른 메서드 )
+=> 이미지파일만 허용하는 등의 기능에서 사용 ex ) image/jpeg (jpg일 경우)
+mr.getOriginalFileName(“form에서 보낸 파일의 name”);
+form에서 선택한 원래 파일의 이름
+mr.getFilesystemName(“form에서 보낸 파일의 name”);
+업로드된 파일의 이름( 리네임 되었을 시 리네임된 이름 )
+mr.getFile(“form에서 보낸 파일의 name”);
+업로드한 파일의 객체를 반환 – File
+mr.getFileNames()
+파일형태의 인풋데이터의 name속성을 Enumeration객체로 반환해준다.
+따라서 for-each문으로 name을 뽑아낼 수 있다.
+
+에러가 터지는 경우
+form의 enctype이 multipart/form-data가 아닐 때
+세이브 디렉토리경로가 잘못되거나 없을 때
+제한용량(10241024100byte - 1mb)보다 클 때
+
+디폴트 리네임정책
+디폴트 리네임정책은 파일이름에 증가하는 숫자를 계속 붙여나가는 형식으로,
+“파일”이라는 이름의 똑같은 파일이 또 업로드 되었을경우 “파일2”로 업로드 시키는 형식이며
+인자로 new DefaultFileRenamePolicy()를 적어주면 된다.
+
+파일 DB처리
+업로드된 파일을 DB에 저장할 때 실제 파일을 저장하는 것이 아닌, 파일이 저장된 경로와 파일의 이름을 저장한다. 
+따라서 파일을 DB에서 불러온다는 것은 경로와 파일명의 정보를 불러오는 것이다.
+
+
+
